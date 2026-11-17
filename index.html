@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>E-Voting Pilkades Gembor 2026-2034 | TPS 01 - Bilik 1</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <!-- jsQR for Real Webcam QR Scanning -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          keyframes: {
+            scanline: {
+              '0%, 100%': { top: '8%' },
+              '50%': { top: '88%' },
+            },
+            printSlide: {
+              '0%': { transform: 'translateY(-78%)', opacity: '0.35' },
+              '100%': { transform: 'translateY(0%)', opacity: '1' },
+            },
+            dropToAudit: {
+              '0%': { transform: 'translateY(0) scale(1) rotate(0deg)', opacity: '1' },
+              '60%': { transform: 'translateY(65px) scale(0.85) rotate(-3deg)', opacity: '0.9' },
+              '100%': { transform: 'translateY(155px) scale(0.45) rotate(-6deg)', opacity: '0' },
+            },
+            fadeInScale: {
+              '0%': { opacity: '0', transform: 'scale(0.96)' },
+              '100%': { opacity: '1', transform: 'scale(1)' },
+            },
+            handPoint: {
+              '0%, 100%': { transform: 'translate(0px, 0px) scale(1)' },
+              '50%': { transform: 'translate(-12px, -7px) scale(0.92)' },
+            }
+          },
+          animation: {
+            scanline: 'scanline 2.6s ease-in-out infinite',
+            printSlide: 'printSlide 1.35s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+            dropToAudit: 'dropToAudit 0.85s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+            fadeInScale: 'fadeInScale 0.25s ease-out forwards',
+            handPoint: 'handPoint 1.15s ease-in-out infinite',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #111827;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Dukungan latar opsional 'latar.jpg' pada area surat suara dengan fallback putih bersih */
+    .bg-kandidat {
+      background-color: #ffffff;
+      background-image: url('latar.jpg');
+      background-position: top center;
+      background-repeat: no-repeat;
+      background-size: 100% auto;
+      background-attachment: scroll;
+    }
+
+    @media (min-width: 1024px) {
+      .bg-kandidat {
+        background-size: 100% 100%;
+      }
+    }
+
+    .kandidat-card {
+      transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .kandidat-card:hover {
+      transform: translateY(-4px);
+    }
+
+    /* Kertas Struk Thermal dengan efek gerigi bawah */
+    .receipt-paper {
+      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 12%, #ffffff 94%, #f1f5f9 100%);
+      box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.38), 0 2px 6px rgba(0, 0, 0, 0.16);
+      position: relative;
+    }
+
+    .receipt-paper::after {
+      content: "";
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      right: 0;
+      height: 8px;
+      background: linear-gradient(-45deg, transparent 33.33%, #ffffff 33.33%, #ffffff 66.66%, transparent 66.66%),
+                  linear-gradient(45deg, transparent 33.33%, #ffffff 33.33%, #ffffff 66.66%, transparent 66.66%);
+      background-size: 12px 16px;
+    }
+
+    /* Dedicated Print Styles untuk Cetak Struk Thermal atau Surat Undangan */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #print-area, #print-area * {
+        visibility: visible !important;
+      }
+      #print-area {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        padding: 16px !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-900 text-slate-900 overflow-x-hidden">
+
+  <!-- Hidden Print Container untuk Cetak Struk Audit atau Surat Undangan -->
+  <div id="print-area" class="hidden"></div>
+
+  <!-- Global Toast Notification Banner (Pengganti alert()) -->
+  <div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0"></div>
+
+  <!-- ===================================================================== -->
+  <!-- LAYAR 1: PEMINDAI QR CODE SURAT UNDANGAN PEMILIH                      -->
+  <!-- ===================================================================== -->
+  <section id="screen-scanner" class="min-h-screen flex flex-col bg-neutral-900 text-white">
+    <!-- Top Clean White Bar -->
+    <header class="bg-white text-slate-900 px-4 sm:px-8 py-3.5 sm:py-4 shadow-md flex flex-wrap items-center justify-between gap-3 z-20">
+      <div class="flex items-center gap-3">
+        <div id="scanner-header-logo" class="w-9 h-10 sm:w-10 sm:h-11 shrink-0"></div>
+        <div>
+          <h1 class="text-base sm:text-xl font-extrabold tracking-tight text-slate-900 leading-tight">
+            Arahkan kamera ke QR code
+          </h1>
+          <p class="text-xs sm:text-sm text-slate-500 font-medium">
+            Letakkan QR code Surat Undangan Pemilih di dalam kotak
+          </p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <!-- Tombol Simulasi Scan QR Undangan -->
+        <button
+          type="button"
+          onclick="openSimModal()"
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs sm:text-sm font-bold shadow-sm transition cursor-pointer"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7V5a2 2 0 012-2h2m10 0h2a2 2 0 012 2v2m0 10v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2M7 12h10" />
+          </svg>
+          <span>Simulasi Scan QR Undangan</span>
+        </button>
+
+        <!-- Toggle Kamera Webcam -->
+        <button
+          type="button"
+          id="btn-toggle-camera"
+          onclick="toggleCameraScanner()"
+          class="text-blue-600 hover:text-blue-800 font-bold text-xs sm:text-sm px-2.5 py-2 rounded-lg hover:bg-blue-50 transition cursor-pointer"
+        >
+          Aktifkan Kamera
+        </button>
+
+        <!-- Tombol Panel Panitia -->
+        <button
+          type="button"
+          onclick="openAdminModal()"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold border border-slate-200 transition cursor-pointer"
+          title="Panel Panitia & Real Count"
+        >
+          <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>Panel Panitia</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Dark Camera Viewport -->
+    <main class="relative flex-1 flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-neutral-900 via-neutral-800 to-neutral-950 p-4">
+      <!-- Live Webcam Video Element -->
+      <video id="qr-video" class="hidden absolute inset-0 w-full h-full object-cover opacity-80" playsinline muted></video>
+      <canvas id="qr-canvas" class="hidden"></canvas>
+
+      <!-- Subtle Ambient Grid Background when Camera Off -->
+      <div id="camera-placeholder-bg" class="absolute inset-0 opacity-20 pointer-events-none"
+           style="background-image: radial-gradient(#64748b 1px, transparent 1px); background-size: 24px 24px;"></div>
+
+      <!-- Kiosk Info Pill Top Overlay -->
+      <div class="relative z-10 mb-5 flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/55 border border-white/10 text-xs text-slate-300 backdrop-blur-sm text-center">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+        <span class="font-semibold tracking-wide">PEMILIHAN KEPALA DESA GEMBOR • TPS 01 / BILIK 1</span>
+      </div>
+
+      <!-- Center Square Viewfinder with Bright Green Corner Brackets -->
+      <div class="relative z-10 w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 flex items-center justify-center">
+        <!-- Animated Paper Scan Card Preview (muncul saat simulasi pemindaian) -->
+        <div id="simulated-scan-card" class="hidden absolute inset-3 bg-white text-slate-900 rounded-xl shadow-2xl p-3 flex flex-col items-center justify-center border-2 border-emerald-400 animate-fadeInScale">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">SURAT UNDANGAN PEMILIH</div>
+          <div id="sim-card-dpt" class="text-xs font-extrabold text-blue-700 mt-0.5">No. Urut DPT: 001</div>
+          <div id="sim-card-qr" class="my-2 p-1.5 bg-white border border-slate-200 rounded w-20 h-20"></div>
+          <div id="sim-card-name" class="text-xs font-extrabold text-slate-900 uppercase">ADEN ARYA</div>
+        </div>
+
+        <!-- 4 Sudut Siku Hijau Menyala -->
+        <div class="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-lime-400 rounded-tl-md"></div>
+        <div class="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-lime-400 rounded-tr-md"></div>
+        <div class="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-lime-400 rounded-bl-md"></div>
+        <div class="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-lime-400 rounded-br-md"></div>
+
+        <!-- Garis Laser Scan Animasi -->
+        <div class="absolute left-3 right-3 h-0.5 bg-gradient-to-r from-transparent via-lime-400 to-transparent shadow-[0_0_12px_#a3e635] animate-scanline"></div>
+
+        <!-- Center Pill Instruction Badge -->
+        <div id="scanner-pill-badge" class="px-4 py-2 rounded-lg bg-black/75 border border-white/15 text-white text-xs sm:text-sm font-semibold shadow-lg backdrop-blur-sm text-center">
+          Letakkan QR code di dalam kotak
+        </div>
+      </div>
+
+      <!-- Direct Demo Shortcut -->
+      <div class="relative z-10 mt-6 flex flex-col sm:flex-row items-center gap-2.5 text-center">
+        <button
+          type="button"
+          onclick="openSimModal()"
+          class="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs sm:text-sm font-medium backdrop-blur-sm transition cursor-pointer"
+        >
+          Klik di sini untuk memilih &amp; memindai <span class="font-bold text-lime-300">Surat Undangan DPT</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- Bottom Dark Status Bar -->
+    <footer class="bg-neutral-950 border-t border-white/10 py-3 px-4 flex items-center justify-between text-xs sm:text-sm">
+      <div class="text-slate-400 hidden sm:block">
+        DPT Terdaftar: <span id="footer-dpt-stats" class="text-white font-semibold">0 / 0 Pemilih</span>
+      </div>
+      <div id="scanner-status-text" class="mx-auto sm:mx-0 font-semibold text-slate-200 tracking-wide flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+        <span>Mencari kode QR undangan...</span>
+      </div>
+      <div id="scanner-clock" class="font-mono text-slate-400 hidden sm:block">08:00:00 WIB</div>
+    </footer>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- LAYAR 2: SURAT SUARA DIGITAL ("SURAT SUARA")                          -->
+  <!-- ===================================================================== -->
+  <section id="screen-ballot" class="hidden min-h-screen flex-col bg-neutral-200">
+    <!-- Top Red Bar dengan Tombol Merah "KELUAR" dan Identitas Pemilih Aktif -->
+    <div class="bg-red-700 text-white px-4 sm:px-6 py-2.5 flex items-center justify-between shadow-md">
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          onclick="cancelVotingSession()"
+          class="px-3.5 py-1.5 rounded-md bg-red-900 hover:bg-red-950 active:scale-95 text-white text-xs font-extrabold uppercase tracking-wider border border-red-400/40 shadow transition cursor-pointer"
+        >
+          KELUAR
+        </button>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-red-800/80 border border-red-400/30 text-xs font-bold">
+          <span class="w-2 h-2 rounded-full bg-emerald-300"></span>
+          <span>Pemilih: <strong id="ballot-voter-info" class="uppercase">ADEN ARYA • DPT #001</strong></span>
+        </span>
+      </div>
+
+      <div class="flex items-center gap-3 text-xs text-red-100">
+        <span class="hidden md:inline font-semibold">TPS 01 / Bilik 1</span>
+        <span id="ballot-clock" class="font-mono font-bold text-white">08:15:00 WIB</span>
+      </div>
+    </div>
+
+    <!-- Main White Ballot Sheet Container -->
+    <div class="flex-1 flex items-center justify-center p-3 sm:p-5 md:p-6">
+      <div id="ballot-sheet-container" class="bg-kandidat w-full max-w-6xl rounded-3xl shadow-2xl border-2 border-slate-300 p-4 sm:p-6 md:p-8 flex flex-col justify-between">
+        
+        <!-- Kop Resmi Surat Suara Desa Gembor -->
+        <div class="text-center mb-5 sm:mb-6 bg-white/95 backdrop-blur-xs rounded-2xl py-3 px-4 border border-slate-200/90 shadow-xs">
+          <div id="ballot-header-logo" class="w-12 h-14 sm:w-14 sm:h-16 mx-auto mb-1.5"></div>
+          <h2 class="text-xl sm:text-2xl md:text-3xl font-black tracking-wide text-slate-900 uppercase">
+            SURAT SUARA
+          </h2>
+          <p class="text-xs sm:text-base md:text-lg font-extrabold text-red-600 uppercase tracking-tight mt-0.5">
+            PEMILIHAN KEPALA DESA GEMBOR
+          </p>
+          <p class="text-[11px] sm:text-xs md:text-sm font-bold text-slate-800 uppercase">
+            KECAMATAN PAGADEN KABUPATEN SUBANG
+          </p>
+          <p class="text-[11px] sm:text-xs md:text-sm font-bold text-slate-600 uppercase">
+            PERIODE TAHUN 2026 - 2034
+          </p>
+        </div>
+
+        <!-- 4-Column Horizontal Candidate Grid (Bingkai Hitam Tegas border-gray-900) -->
+        <div id="candidates-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6 my-auto">
+
+          <!-- KANDIDAT NO 1 -->
+          <div id="candidate-card-1" onclick="selectCandidate(1)" class="kandidat-card bg-white rounded-xl overflow-hidden border-[3px] border-gray-900 shadow-md flex flex-col cursor-pointer group relative">
+            <div id="cand-num-1" class="bg-white text-black font-black text-2xl sm:text-3xl py-1.5 text-center border-b-[3px] border-gray-900 leading-none">
+              1
+            </div>
+            <div class="relative w-full aspect-[1/1.08] bg-gray-200 overflow-hidden">
+              <img id="cand-img-1" src="calon1.png" onerror="this.onerror=null; this.src='https://placehold.co/300x325/e2e8f0/1e293b?text=Foto+Calon+1'" class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" alt="Foto Calon 1" />
+              <div id="cand-selected-badge-1" class="hidden absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-wider items-center gap-1 shadow-md">
+                <span>Dipilih</span>
+              </div>
+            </div>
+            <div id="cand-name-box-1" class="bg-white py-2 px-1.5 text-center border-t-[3px] border-gray-900 flex-grow flex items-center justify-center min-h-[54px]">
+              <h3 id="cand-name-1" class="font-extrabold text-gray-900 uppercase tracking-tight leading-tight text-xs xl:text-[13px]">ASEP MOHAMAD ROMLI</h3>
+            </div>
+          </div>
+
+          <!-- KANDIDAT NO 2 -->
+          <div id="candidate-card-2" onclick="selectCandidate(2)" class="kandidat-card bg-white rounded-xl overflow-hidden border-[3px] border-gray-900 shadow-md flex flex-col cursor-pointer group relative">
+            <div id="cand-num-2" class="bg-white text-black font-black text-2xl sm:text-3xl py-1.5 text-center border-b-[3px] border-gray-900 leading-none">
+              2
+            </div>
+            <div class="relative w-full aspect-[1/1.08] bg-gray-200 overflow-hidden">
+              <img id="cand-img-2" src="calon2.png" onerror="this.onerror=null; this.src='https://placehold.co/300x325/e2e8f0/1e293b?text=Foto+Calon+2'" class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" alt="Foto Calon 2" />
+              <div id="cand-selected-badge-2" class="hidden absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-wider items-center gap-1 shadow-md">
+                <span>Dipilih</span>
+              </div>
+            </div>
+            <div id="cand-name-box-2" class="bg-white py-2 px-1.5 text-center border-t-[3px] border-gray-900 flex-grow flex items-center justify-center min-h-[54px]">
+              <h3 id="cand-name-2" class="font-extrabold text-gray-900 uppercase tracking-tight leading-tight text-xs xl:text-[13px]">H. TATANG SUHARLAN</h3>
+            </div>
+          </div>
+
+          <!-- KANDIDAT NO 3 -->
+          <div id="candidate-card-3" onclick="selectCandidate(3)" class="kandidat-card bg-white rounded-xl overflow-hidden border-[3px] border-gray-900 shadow-md flex flex-col cursor-pointer group relative">
+            <div id="cand-num-3" class="bg-white text-black font-black text-2xl sm:text-3xl py-1.5 text-center border-b-[3px] border-gray-900 leading-none">
+              3
+            </div>
+            <div class="relative w-full aspect-[1/1.08] bg-gray-200 overflow-hidden">
+              <img id="cand-img-3" src="calon3.png" onerror="this.onerror=null; this.src='https://placehold.co/300x325/e2e8f0/1e293b?text=Foto+Calon+3'" class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" alt="Foto Calon 3" />
+              <div id="cand-selected-badge-3" class="hidden absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-wider items-center gap-1 shadow-md">
+                <span>Dipilih</span>
+              </div>
+            </div>
+            <div id="cand-name-box-3" class="bg-white py-2 px-1.5 text-center border-t-[3px] border-gray-900 flex-grow flex items-center justify-center min-h-[54px]">
+              <h3 id="cand-name-3" class="font-extrabold text-gray-900 uppercase tracking-tight leading-tight text-xs xl:text-[13px]">WARKESIH</h3>
+            </div>
+          </div>
+
+          <!-- KANDIDAT NO 4 -->
+          <div id="candidate-card-4" onclick="selectCandidate(4)" class="kandidat-card bg-white rounded-xl overflow-hidden border-[3px] border-gray-900 shadow-md flex flex-col cursor-pointer group relative">
+            <div id="cand-num-4" class="bg-white text-black font-black text-2xl sm:text-3xl py-1.5 text-center border-b-[3px] border-gray-900 leading-none">
+              4
+            </div>
+            <div class="relative w-full aspect-[1/1.08] bg-gray-200 overflow-hidden">
+              <img id="cand-img-4" src="calon4.png" onerror="this.onerror=null; this.src='https://placehold.co/300x325/e2e8f0/1e293b?text=Foto+Calon+4'" class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" alt="Foto Calon 4" />
+              <div id="cand-selected-badge-4" class="hidden absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-wider items-center gap-1 shadow-md">
+                <span>Dipilih</span>
+              </div>
+            </div>
+            <div id="cand-name-box-4" class="bg-white py-2 px-1.5 text-center border-t-[3px] border-gray-900 flex-grow flex items-center justify-center min-h-[54px]">
+              <h3 id="cand-name-4" class="font-extrabold text-gray-900 uppercase tracking-tight leading-tight text-xs xl:text-[13px]">DEDI SUHARNA</h3>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Tombol Besar Biru di Bawah Tengah: "PILIH KANDIDAT INI" -->
+        <div class="relative mt-6 sm:mt-8 max-w-2xl mx-auto w-full">
+          <button
+            type="button"
+            id="btn-submit-ballot"
+            disabled
+            onclick="openConfirmModal()"
+            class="w-full py-3.5 sm:py-4 rounded-xl font-extrabold text-sm sm:text-base uppercase tracking-wider transition-all duration-200 bg-slate-300 text-slate-500 cursor-not-allowed"
+          >
+            PILIH KANDIDAT INI
+          </button>
+
+          <!-- Animasi Tangan Menunjuk Tombol "PILIH KANDIDAT INI" -->
+          <div
+            id="hand-pointer-guide"
+            aria-hidden="true"
+            class="hidden pointer-events-none select-none z-20 absolute -bottom-5 right-3 sm:right-8 items-center gap-1.5 animate-handPoint"
+          >
+            <div class="relative flex items-center justify-center">
+              <!-- Efek riak sentuhan di ujung jari -->
+              <span class="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-amber-300/75 animate-ping"></span>
+              <span class="absolute -top-0.5 -left-0.5 w-3.5 h-3.5 rounded-full bg-yellow-300 border border-slate-900/40"></span>
+              <!-- Ikon SVG Tangan Menunjuk ke Tombol -->
+              <svg
+                class="w-11 h-11 sm:w-12 sm:h-12 drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] -rotate-12"
+                viewBox="0 0 64 64"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M23 10C23 7.23858 25.2386 5 28 5C30.7614 5 33 7.23858 33 10V27.5C33.8 26.9 34.8 26.5 36 26.5C38.4 26.5 40.4 28.2 40.9 30.5C41.7 30 42.7 29.7 43.8 29.7C46.5 29.7 48.7 31.8 48.9 34.4C49.6 34.1 50.3 34 51.1 34C53.8 34 56 36.2 56 38.9V44.5C56 52.5 49.5 59 41.5 59H31.5C25.5 59 20.4 55.3 18.2 49.8L12.6 37.9C11.4 35.4 12.5 32.4 15 31.2C17.4 30.1 20.2 31 21.5 33.3L23 36V10Z"
+                  fill="#FDE68A"
+                  stroke="#0F172A"
+                  stroke-width="3.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path d="M33 27.5V34" stroke="#0F172A" stroke-width="2.8" stroke-linecap="round" />
+                <path d="M41 30.5V36" stroke="#0F172A" stroke-width="2.8" stroke-linecap="round" />
+                <path d="M49 34.5V39" stroke="#0F172A" stroke-width="2.8" stroke-linecap="round" />
+              </svg>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] sm:text-xs uppercase tracking-wide border-2 border-slate-900 shadow-md">
+              Tekan
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- LAYAR 3: MODAL KONFIRMASI PEMILIHAN                                   -->
+  <!-- ===================================================================== -->
+  <div id="modal-confirm" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-fadeInScale border border-slate-200 text-center">
+      <h3 class="text-xl sm:text-2xl font-extrabold text-slate-900">
+        Konfirmasi Pemilihan
+      </h3>
+      <p class="text-xs sm:text-sm text-slate-600 mt-1.5">
+        Apakah Anda yakin akan memilih kandidat ini?
+      </p>
+
+      <!-- Pratinjau Kartu Kandidat yang Dipilih -->
+      <div class="my-6 flex flex-col items-center justify-center">
+        <div class="w-44 sm:w-48 border-[3px] border-gray-900 rounded-xl overflow-hidden shadow-lg bg-white">
+          <div id="confirm-cand-number" class="bg-blue-600 text-white text-center font-black text-2xl py-1 border-b-[3px] border-gray-900">
+            1
+          </div>
+          <div id="confirm-cand-photo-box" class="w-full aspect-[1/1.08] bg-gray-200 flex items-end justify-center overflow-hidden">
+          </div>
+          <div id="confirm-cand-name" class="p-2.5 text-center text-xs sm:text-sm font-extrabold text-gray-900 uppercase leading-snug border-t-[3px] border-gray-900 bg-white">
+            ASEP MOHAMAD ROMLI
+          </div>
+        </div>
+      </div>
+
+      <!-- Dua Tombol Lebar Berdampingan: Merah "ULANGI" (Kiri) & Biru "PILIH" (Kanan) -->
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 mt-4">
+        <button
+          type="button"
+          onclick="closeConfirmModal()"
+          class="py-3.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow transition cursor-pointer"
+        >
+          ULANGI
+        </button>
+        <button
+          type="button"
+          onclick="confirmAndCastVote()"
+          class="py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow-md transition cursor-pointer"
+        >
+          PILIH
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- LAYAR 4: PRINTER STRUK AUDIT THERMAL & KOTAK AUDIT                    -->
+  <!-- ===================================================================== -->
+  <section id="screen-receipt" class="hidden min-h-screen flex-col bg-slate-900 text-white">
+    <!-- Top Header -->
+    <header class="bg-slate-800 border-b border-slate-700 px-4 sm:px-8 py-4 flex items-center justify-between">
+      <div>
+        <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-400">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          Suara Berhasil Dikunci &amp; Tercatat
+        </span>
+        <h2 class="text-lg sm:text-xl font-extrabold text-white mt-0.5">
+          Pencetakan Struk Audit &amp; Penyerahan ke Kotak Audit
+        </h2>
+      </div>
+      <div class="text-right hidden sm:block">
+        <div class="text-xs text-slate-400">Perangkat Pencetak</div>
+        <div class="text-sm font-bold text-amber-300">Thermal Printer • Bilik 1</div>
+      </div>
+    </header>
+
+    <!-- Main Printer & Audit Box Stage -->
+    <main class="flex-1 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12 p-4 sm:p-8 max-w-6xl mx-auto w-full">
+      
+      <!-- Kolom Kiri: Simulasi Printer Thermal Hitam bertuliskan "Bilik 1" -->
+      <div class="flex flex-col items-center w-full max-w-sm">
+        <div class="w-72 sm:w-80 bg-neutral-800 rounded-t-3xl border-2 border-neutral-700 p-4 shadow-2xl relative z-20">
+          <div class="flex items-center justify-between mb-3">
+            <div class="px-3 py-1 bg-yellow-300 text-slate-900 font-black text-xs rounded shadow-xs border border-yellow-400">
+              1 • Bilik 1
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
+              <span class="text-[10px] font-mono text-slate-400">THERMAL READY</span>
+            </div>
+          </div>
+          <!-- Celah Keluar Kertas -->
+          <div class="h-3.5 bg-black rounded-full border border-neutral-600 shadow-inner"></div>
+        </div>
+
+        <!-- Kertas Struk Audit Keluar Bertahap -->
+        <div class="w-64 sm:w-72 overflow-hidden pt-0 pb-4 px-2 flex justify-center -mt-1 z-10">
+          <div id="thermal-receipt-paper" class="receipt-paper w-full text-slate-900 px-4 pt-5 pb-6 text-center animate-printSlide">
+            <div class="text-xs font-black tracking-wider uppercase text-slate-900">
+              SURAT AUDIT
+            </div>
+            <div class="text-[11px] font-extrabold uppercase text-slate-900 mt-0.5 leading-tight">
+              PEMILIHAN KEPALA DESA GEMBOR<br/>PERIODE TAHUN 2026 - 2034
+            </div>
+            <div class="text-[11px] font-bold text-slate-800 mt-0.5">
+              TPS 01 / BILIK 1
+            </div>
+
+            <!-- QR Code Unik dengan Token Hash di Tengah -->
+            <div class="relative my-4 flex items-center justify-center">
+              <div id="receipt-qrcode" class="p-1 bg-white w-36 h-36"></div>
+              <div class="absolute bg-white px-1.5 py-0.5 border border-slate-300 shadow-xs text-[10px] font-mono font-bold leading-tight text-slate-900">
+                <div id="receipt-hash-line1">a49c2e10</div>
+                <div id="receipt-hash-line2">77b81d04</div>
+              </div>
+            </div>
+
+            <!-- Kode Hash Terenkripsi -->
+            <div id="receipt-cipher-text" class="font-mono text-[9.5px] leading-tight text-slate-800 break-all tracking-tighter font-semibold">
+              *&amp;+=#%$==@GMB26#*&$%*#+=@%&amp;=-$&amp;#===*HASH-AUDIT-TERENKRIPSI*#==@%&amp;=-$&amp;#*
+            </div>
+
+            <div class="mt-3 pt-2 border-t border-dashed border-slate-400 text-[9px] font-mono text-slate-500">
+              <span id="receipt-timestamp">28/12/2025 08:15:22 WIB</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kolom Kanan: Instruksi Kotak Audit & Tombol Selesai -->
+      <div class="flex flex-col items-center lg:items-start text-center lg:text-left max-w-md w-full bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold mb-3">
+          Tahap Akhir Pemungutan Suara
+        </div>
+        <h3 class="text-xl font-extrabold text-white">
+          Ambil Struk &amp; Masukkan ke Kotak Audit
+        </h3>
+        <p class="text-sm text-slate-300 mt-2 leading-relaxed">
+          Struk audit terenkripsi telah dicetak sebagai bukti sah pemungutan suara digital Desa Gembor. Silakan masukkan struk ke dalam <strong>Kotak Audit TPS 01</strong> untuk menyelesaikan proses memilih.
+        </p>
+
+        <!-- Kotak Audit Graphic -->
+        <div class="w-full my-5 p-4 rounded-xl bg-amber-950/40 border-2 border-dashed border-amber-500/50 flex items-center gap-4">
+          <div class="w-14 h-14 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0">
+            <svg class="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </div>
+          <div class="text-left">
+            <div class="text-xs font-bold uppercase tracking-wider text-amber-300">Kotak Audit Fisik TPS 01</div>
+            <div class="text-sm font-semibold text-white mt-0.5">
+              Total Struk Masuk: <span id="audit-box-count" class="text-amber-400 font-extrabold">0</span> Lembar
+            </div>
+            <div class="text-xs text-slate-400 mt-0.5">Menjamin kerahasiaan &amp; audit manual</div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="w-full flex flex-col gap-3">
+          <button
+            type="button"
+            id="btn-finish-audit"
+            onclick="insertReceiptIntoAuditBox()"
+            class="w-full py-3.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-emerald-900/40 flex items-center justify-center gap-2 transition cursor-pointer"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Ambil Struk &amp; Masukkan ke Kotak Audit</span>
+          </button>
+
+          <button
+            type="button"
+            onclick="printPhysicalThermalReceipt()"
+            class="w-full py-2.5 px-4 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold text-xs sm:text-sm border border-slate-600 flex items-center justify-center gap-2 transition cursor-pointer"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            <span>Cetak Fisik Struk (Printer Thermal)</span>
+          </button>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- LAYAR PENUTUP: UCAPAN TERIMA KASIH                                    -->
+  <!-- ===================================================================== -->
+  <section id="screen-thankyou" class="hidden min-h-screen flex-col items-center justify-center bg-slate-900 text-white p-4 sm:p-6">
+    <div class="bg-white text-slate-900 p-8 md:p-12 rounded-3xl shadow-2xl border-t-8 border-emerald-500 text-center max-w-xl w-full animate-fadeInScale">
+      <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-emerald-100 mb-5 border-4 border-emerald-200">
+        <svg class="w-12 h-12 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+
+      <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-2">Terima Kasih!</h2>
+      <p class="text-base md:text-lg font-bold text-emerald-600 mb-4">Pemilihan Anda Telah Selesai</p>
+
+      <p class="text-slate-600 text-sm md:text-base leading-relaxed mb-6">
+        Terima kasih telah menggunakan hak pilih Anda pada <strong>Pemilihan Kepala Desa Gembor Periode 2026 - 2034</strong>. Pilihan Anda telah tersimpan secara rahasia.
+      </p>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 mb-7 text-xs sm:text-sm text-slate-500">
+        Silakan tinggalkan bilik suara atau tekan tombol di bawah untuk mengulangi simulasi bagi pemilih berikutnya.
+      </div>
+
+      <button
+        type="button"
+        onclick="finishToNextVoter()"
+        class="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-extrabold rounded-xl transition shadow-lg text-base sm:text-lg cursor-pointer"
+      >
+        Selesai / Pemilih Berikutnya
+      </button>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL SIMULASI SCAN QR UNDANGAN PEMILIH (DPT DESA GEMBOR)             -->
+  <!-- ===================================================================== -->
+  <div id="modal-sim-qr" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6">
+    <div class="bg-white text-slate-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-fadeInScale">
+      <div class="px-5 sm:px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div>
+          <h3 class="text-base sm:text-lg font-extrabold">Simulasi Scan QR Surat Undangan Pemilih (DPT Desa Gembor)</h3>
+          <p class="text-xs text-slate-300">Pilih salah satu Surat Undangan DPT di bawah untuk memindai QR ke Bilik 1</p>
+        </div>
+        <button
+          type="button"
+          onclick="closeSimModal()"
+          class="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="sim-voters-list" class="p-4 sm:p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-100">
+        <!-- Kartu Undangan DPT dirender oleh JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL PREVIEW SURAT UNDANGAN PEMUNGUTAN SUARA                         -->
+  <!-- ===================================================================== -->
+  <div id="modal-invitation-preview" class="hidden fixed inset-0 z-[60] bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6">
+    <div class="bg-white text-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-fadeInScale">
+      <div class="px-5 py-3.5 bg-slate-800 text-white flex items-center justify-between">
+        <span class="font-bold text-sm">Surat Undangan Pemungutan Suara — Desa Gembor</span>
+        <button type="button" onclick="closeInvitationPreview()" class="text-slate-300 hover:text-white p-1 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="invitation-letter-content" class="p-5 sm:p-8 overflow-y-auto bg-white">
+        <!-- Isi surat undangan resmi -->
+      </div>
+
+      <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-end gap-3">
+        <button
+          type="button"
+          onclick="printInvitationLetter()"
+          class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs sm:text-sm font-bold transition cursor-pointer"
+        >
+          Cetak Surat Undangan
+        </button>
+        <button
+          type="button"
+          id="btn-scan-from-preview"
+          class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow transition cursor-pointer"
+        >
+          Scan QR Ini Sekarang
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL PANEL PANITIA (3 TAB: REAL COUNT, DPT, VERIFIKATOR AUDIT)       -->
+  <!-- ===================================================================== -->
+  <div id="modal-admin" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-2 sm:p-6">
+    <div class="bg-white text-slate-900 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-fadeInScale">
+      <!-- Header Panel Panitia -->
+      <div class="px-5 sm:px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div id="admin-header-logo" class="w-9 h-10"></div>
+          <div>
+            <h3 class="text-base sm:text-lg font-extrabold">Panel Panitia Pilkades Gembor</h3>
+            <p class="text-xs text-slate-300">Desa Gembor, Kec. Pagaden, Kab. Subang • TPS 01 / Bilik 1</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAdminModal()" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- 3 Tab Navigasi Panitia -->
+      <div class="flex border-b border-slate-200 bg-slate-50 px-4 overflow-x-auto">
+        <button type="button" onclick="switchAdminTab('realcount')" id="tab-btn-realcount" class="admin-tab-btn px-4 py-3 text-xs sm:text-sm font-bold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap cursor-pointer">
+          1. Real Count &amp; Grafik Perolehan Suara
+        </button>
+        <button type="button" onclick="switchAdminTab('dpt')" id="tab-btn-dpt" class="admin-tab-btn px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap cursor-pointer">
+          2. Daftar DPT &amp; Cetak Surat Undangan
+        </button>
+        <button type="button" onclick="switchAdminTab('audit')" id="tab-btn-audit" class="admin-tab-btn px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap cursor-pointer">
+          3. Verifikator Token Struk Audit
+        </button>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="p-4 sm:p-6 overflow-y-auto flex-1 bg-white">
+        
+        <!-- TAB 1: REAL COUNT & GRAFIK PEROLEHAN SUARA -->
+        <div id="admin-tab-realcount" class="space-y-6">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <div class="text-xs font-semibold text-slate-500">Total DPT Terdaftar</div>
+              <div id="stat-total-dpt" class="text-2xl font-black text-slate-900 mt-1">0</div>
+            </div>
+            <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+              <div class="text-xs font-semibold text-emerald-700">Sudah Memilih (Sah)</div>
+              <div id="stat-voted-dpt" class="text-2xl font-black text-emerald-700 mt-1">0</div>
+            </div>
+            <div class="p-4 rounded-xl bg-amber-50 border border-amber-200">
+              <div class="text-xs font-semibold text-amber-700">Belum Memilih</div>
+              <div id="stat-unvoted-dpt" class="text-2xl font-black text-amber-700 mt-1">0</div>
+            </div>
+            <div class="p-4 rounded-xl bg-blue-50 border border-blue-200">
+              <div class="text-xs font-semibold text-blue-700">Partisipasi Pemilih</div>
+              <div id="stat-participation" class="text-2xl font-black text-blue-700 mt-1">0%</div>
+            </div>
+          </div>
+
+          <!-- Grafik Perolehan Suara 4 Kandidat Desa Gembor -->
+          <div class="border border-slate-200 rounded-2xl p-4 sm:p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-extrabold text-slate-900 text-sm sm:text-base">Perolehan Suara Kandidat Kepala Desa Gembor (2026 - 2034)</h4>
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">Real-Time</span>
+            </div>
+            <div id="realcount-bars" class="space-y-4">
+              <!-- Bar grafik dirender otomatis oleh JS -->
+            </div>
+          </div>
+
+          <!-- Tombol Reset Simulasi (Tanpa confirm()) -->
+          <div class="p-4 rounded-xl bg-red-50 border border-red-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h5 class="text-sm font-extrabold text-red-900">Reset Data Simulasi E-Voting</h5>
+              <p class="text-xs text-red-700 mt-0.5">Mengembalikan seluruh status DPT menjadi "Belum Memilih" dan mengosongkan perolehan suara.</p>
+            </div>
+            <div id="reset-action-wrapper" class="shrink-0">
+              <button
+                type="button"
+                onclick="showInlineResetConfirm()"
+                class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm transition cursor-pointer"
+              >
+                Reset Simulasi
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: DAFTAR DPT & CETAK SURAT UNDANGAN -->
+        <div id="admin-tab-dpt" class="hidden space-y-5">
+          <!-- Tambah Pemilih DPT Baru -->
+          <form onsubmit="handleAddDptVoter(event)" class="p-4 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">No. Urut DPT</label>
+              <input type="text" id="new-dpt-no" required placeholder="Contoh: 006" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap Pemilih</label>
+              <input type="text" id="new-dpt-name" required placeholder="Contoh: AHMAD HIDAYAT" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm uppercase focus:outline-none focus:border-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">NIK (16 Digit)</label>
+              <input type="text" id="new-dpt-nik" required maxlength="16" placeholder="321304..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono focus:outline-none focus:border-blue-600" />
+            </div>
+            <button type="submit" class="py-2 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition cursor-pointer">
+              + Tambah DPT
+            </button>
+          </form>
+
+          <!-- Tabel DPT -->
+          <div class="overflow-x-auto border border-slate-200 rounded-xl">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                  <th class="py-3 px-4 font-extrabold">No. DPT</th>
+                  <th class="py-3 px-4 font-extrabold">Nama Pemilih</th>
+                  <th class="py-3 px-4 font-extrabold">NIK</th>
+                  <th class="py-3 px-4 font-extrabold">Status</th>
+                  <th class="py-3 px-4 font-extrabold text-right">Surat Undangan QR</th>
+                </tr>
+              </thead>
+              <tbody id="admin-dpt-tbody" class="divide-y divide-slate-200">
+                <!-- Baris DPT dirender oleh JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: VERIFIKATOR TOKEN STRUK AUDIT -->
+        <div id="admin-tab-audit" class="hidden space-y-5">
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+              Verifikasi Keaslian Token Struk Audit (Tanpa Membocorkan Identitas Pemilih)
+            </label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                id="audit-verify-input"
+                placeholder="Masukkan kode hash dari struk audit (mis. a49c2e10-77b81d04)..."
+                class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-sm focus:outline-none focus:border-blue-600"
+              />
+              <button
+                type="button"
+                onclick="verifyAuditToken()"
+                class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition cursor-pointer"
+              >
+                Verifikasi Struk
+              </button>
+            </div>
+            <div id="audit-verify-result" class="mt-3 hidden"></div>
+          </div>
+
+          <div>
+            <h4 class="font-extrabold text-slate-900 text-sm mb-3">Log Token Struk Audit Tercatat di Kotak Audit TPS 01</h4>
+            <div id="audit-logs-list" class="space-y-2.5">
+              <!-- Daftar log token anonim -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- JAVASCRIPT LOGIC & DATA PILKADES DESA GEMBOR 2026 - 2034              -->
+  <!-- ===================================================================== -->
+  <script>
+    const STORAGE_KEY = 'pilkades_gembor_subang_2026_2034_v3';
+
+    // =========================================================================
+    // KONFIGURASI FILE FOTO & LOGO LOKAL (TARUH DALAM 1 FOLDER BERSAMA HTML INI)
+    // Ganti nama file di bawah ini sesuai nama file gambar di folder Anda
+    // =========================================================================
+    const LOCAL_ASSETS = {
+      logo: 'logoss.jpg',      // Logo kop surat suara, scanner & undangan
+      background: 'latar.jpg'  // Latar belakang surat suara (opsional)
+    };
+
+    const ELECTION_META = {
+      title: 'PEMILIHAN KEPALA DESA GEMBOR',
+      period: 'PERIODE TAHUN 2026 - 2034',
+      village: 'DESA GEMBOR',
+      district: 'KECAMATAN PAGADEN',
+      regency: 'KABUPATEN SUBANG',
+      tps: 'TPS 01',
+      booth: 'Bilik 1',
+      dateText: 'Minggu, 28 Desember 2025',
+      timeText: '08:00 s/d 14:00 WIB',
+      address: 'Balai Desa Gembor, Kec. Pagaden, Kab. Subang'
+    };
+
+    // Data 4 Kandidat Resmi Desa Gembor (panggil file foto lokal di folder yang sama)
+    const DEFAULT_CANDIDATES = [
+      { id: 1, number: 1, name: 'ASEP MOHAMAD ROMLI', img: 'calon1.png', photoPosition: 'object-top', votes: 0 },
+      { id: 2, number: 2, name: 'H. TATANG SUHARLAN', img: 'calon2.png', photoPosition: 'object-top', votes: 0 },
+      { id: 3, number: 3, name: 'WARKESIH', img: 'calon3.png', photoPosition: 'object-top', votes: 0 },
+      { id: 4, number: 4, name: 'DEDI SUHARNA', img: 'calon4.png', photoPosition: 'object-top', votes: 0 }
+    ];
+
+    // Daftar Pemilih Tetap (DPT)
+    const DEFAULT_VOTERS = [
+      { dptNo: '001', name: 'ADEN ARYA', nik: '3213041505950001', qrCode: 'PILKADES-GEMBOR-TPS01-DPT001-3213041505950001', hasVoted: false, votedAt: null },
+      { dptNo: '002', name: 'AGET', nik: '3213045208910002', qrCode: 'PILKADES-GEMBOR-TPS01-DPT002-3213045208910002', hasVoted: false, votedAt: null },
+      { dptNo: '003', name: 'M. RAIHAN', nik: '3213041003840003', qrCode: 'PILKADES-GEMBOR-TPS01-DPT003-3213041003840003', hasVoted: false, votedAt: null },
+      { dptNo: '004', name: 'ANDRE', nik: '3213046411930004', qrCode: 'PILKADES-GEMBOR-TPS01-DPT004-3213046411930004', hasVoted: false, votedAt: null },
+      { dptNo: '005', name: 'INTAN', nik: '3213040709870005', qrCode: 'PILKADES-GEMBOR-TPS01-DPT005-3213040709870005', hasVoted: false, votedAt: null }
+    ];
+
+    let appState = {
+      candidates: JSON.parse(JSON.stringify(DEFAULT_CANDIDATES)),
+      voters: JSON.parse(JSON.stringify(DEFAULT_VOTERS)),
+      auditLogs: []
+    };
+
+    let activeVoter = null;
+    let selectedCandidateId = null;
+    let cameraStream = null;
+    let cameraAnimFrame = null;
+    let isScanningCooldown = false;
+
+    // =========================================================================
+    // GENERATOR QR CODE SVG MANDIRI (100% OFFLINE & ANTI-ERROR)
+    // =========================================================================
+    function generateDeterministicQrSVG(payload, centerBadgeText = '') {
+      const text = String(payload || 'PILKADES-GEMBOR');
+      const size = 25;
+      const grid = Array.from({ length: size }, () => Array(size).fill(false));
+      const reserved = Array.from({ length: size }, () => Array(size).fill(false));
+
+      function placeFinder(r0, c0) {
+        for (let r = -1; r <= 7; r++) {
+          for (let c = -1; c <= 7; c++) {
+            const rr = r0 + r;
+            const cc = c0 + c;
+            if (rr < 0 || rr >= size || cc < 0 || cc >= size) continue;
+            reserved[rr][cc] = true;
+            const inOuter = r >= 0 && r <= 6 && c >= 0 && c <= 6 && (r === 0 || r === 6 || c === 0 || c === 6);
+            const inInner = r >= 2 && r <= 4 && c >= 2 && c <= 4;
+            grid[rr][cc] = inOuter || inInner;
+          }
+        }
+      }
+
+      placeFinder(0, 0);
+      placeFinder(0, size - 7);
+      placeFinder(size - 7, 0);
+
+      for (let i = 8; i < size - 8; i++) {
+        reserved[6][i] = true;
+        reserved[i][6] = true;
+        grid[6][i] = i % 2 === 0;
+        grid[i][6] = i % 2 === 0;
+      }
+
+      let seed = 2166136261;
+      for (let i = 0; i < text.length; i++) {
+        seed ^= text.charCodeAt(i);
+        seed = Math.imul(seed, 16777619);
+      }
+
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (reserved[r][c]) continue;
+          seed ^= (r * 31 + c * 17 + text.charCodeAt((r + c) % text.length));
+          seed = Math.imul(seed ^ (seed >>> 13), 1597334677);
+          grid[r][c] = ((seed >>> 24) & 1) === 1;
+        }
+      }
+
+      let rects = '';
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (grid[r][c]) {
+            rects += `<rect x="${c + 2}" y="${r + 2}" width="1" height="1" fill="#0f172a" />`;
+          }
+        }
+      }
+
+      const centerBadge = centerBadgeText
+        ? `<rect x="8.5" y="11" width="12" height="7" rx="1.2" fill="#ffffff" stroke="#0f172a" stroke-width="0.45" />
+           <text x="14.5" y="15.4" text-anchor="middle" font-size="2.35" font-weight="800" font-family="monospace" fill="#0f172a">${centerBadgeText.slice(0, 8)}</text>`
+        : '';
+
+      return `
+        <svg viewBox="0 0 29 29" class="w-full h-full" shape-rendering="crispEdges" aria-label="QR Code">
+          <rect x="0" y="0" width="29" height="29" fill="#ffffff" />
+          ${rects}
+          ${centerBadge}
+        </svg>
+      `;
+    }
+
+    // =========================================================================
+    // SVG ASSETS: LAMBANG KABUPATEN SUBANG
+    // =========================================================================
+    function getSubangEmblemSVG() {
+      return `
+        <svg viewBox="0 0 100 115" class="w-full h-full drop-shadow-xs" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 10 H90 V55 C90 82 50 106 50 106 C50 106 10 82 10 55 Z" fill="#15803d" stroke="#eab308" stroke-width="5"/>
+          <path d="M16 16 H84 V53 C84 76 50 98 50 98 C50 98 16 76 16 53 Z" fill="#0369a1"/>
+          <path d="M16 54 H84 V53 C84 76 50 98 50 98 C50 98 16 76 16 53 Z" fill="#166534"/>
+          <polygon points="50,20 53,28 62,28 55,33 58,41 50,36 42,41 45,33 38,28 47,28" fill="#facc15"/>
+          <path d="M26 72 C20 58 22 40 30 28" fill="none" stroke="#facc15" stroke-width="3.5" stroke-linecap="round"/>
+          <path d="M74 72 C80 58 78 40 70 28" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+          <circle cx="50" cy="54" r="11" fill="#facc15" stroke="#ca8a04" stroke-width="2"/>
+          <rect x="22" y="76" width="56" height="11" rx="3" fill="#fef08a" stroke="#ca8a04" stroke-width="1.5"/>
+          <text x="50" y="83.8" font-size="6.5" font-weight="900" text-anchor="middle" fill="#713f12" font-family="Inter, sans-serif">SUBANG</text>
+        </svg>
+      `;
+    }
+
+    function renderEmblemHTML() {
+      return `<img src="${LOCAL_ASSETS.logo}" alt="Logo Pemilihan" onerror="this.onerror=null; this.parentElement.innerHTML=getSubangEmblemSVG();" class="w-full h-full object-contain drop-shadow-xs" />`;
+    }
+
+    function syncAllLogosDOM() {
+      const logoHtml = renderEmblemHTML();
+      ['scanner-header-logo', 'ballot-header-logo', 'admin-header-logo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = logoHtml;
+      });
+    }
+
+    function getCandidateActiveImageSrc(cand) {
+      return cand.img;
+    }
+
+    function applyBallotBackgroundStyle() {
+      const container = document.getElementById('ballot-sheet-container');
+      if (!container) return;
+      if (LOCAL_ASSETS.background) {
+        container.style.backgroundImage = `url('${LOCAL_ASSETS.background}')`;
+      } else {
+        container.style.backgroundImage = '';
+      }
+    }
+
+    function syncCandidateCardsDOM() {
+      appState.candidates.forEach((cand) => {
+        const isSelected = selectedCandidateId === cand.id;
+        const focusPos = cand.photoPosition || 'object-top';
+        const card = document.getElementById(`candidate-card-${cand.id}`);
+        const numBox = document.getElementById(`cand-num-${cand.id}`);
+        const imgEl = document.getElementById(`cand-img-${cand.id}`);
+        const nameBox = document.getElementById(`cand-name-box-${cand.id}`);
+        const nameEl = document.getElementById(`cand-name-${cand.id}`);
+        const badgeEl = document.getElementById(`cand-selected-badge-${cand.id}`);
+
+        if (!card || !imgEl) return;
+
+        const targetSrc = getCandidateActiveImageSrc(cand);
+        imgEl.onerror = function () {
+          this.onerror = null;
+          this.src = `https://placehold.co/300x325/e2e8f0/1e293b?text=Foto+Calon+${cand.number}`;
+        };
+        if (imgEl.getAttribute('src') !== targetSrc) {
+          imgEl.src = targetSrc;
+        }
+        imgEl.className = `w-full h-full object-cover ${focusPos} group-hover:scale-105 transition-transform duration-300`;
+
+        if (nameEl) nameEl.textContent = cand.name;
+
+        if (isSelected) {
+          card.className = 'kandidat-card bg-white rounded-xl overflow-hidden border-[3px] border-blue-600 ring-4 ring-blue-500/35 shadow-2xl scale-[1.02] flex flex-col cursor-pointer group relative';
+          if (numBox) numBox.className = 'bg-blue-600 text-white font-black text-2xl sm:text-3xl py-1.5 text-center border-b-[3px] border-blue-600 leading-none transition-colors';
+          if (nameBox) nameBox.className = 'bg-blue-50 py-2 px-1.5 text-center border-t-[3px] border-blue-600 text-blue-950 flex-grow flex items-center justify-center min-h-[54px] transition-colors';
+          if (badgeEl) {
+            badgeEl.classList.remove('hidden');
+            badgeEl.classList.add('flex');
+          }
+        } else {
+          card.className = 'kandidat-card bg-white rounded-xl overflow-hidden border-[3px] border-gray-900 shadow-md hover:shadow-xl flex flex-col cursor-pointer group relative';
+          if (numBox) numBox.className = 'bg-white text-black font-black text-2xl sm:text-3xl py-1.5 text-center border-b-[3px] border-gray-900 leading-none transition-colors';
+          if (nameBox) nameBox.className = 'bg-white py-2 px-1.5 text-center border-t-[3px] border-gray-900 text-gray-900 flex-grow flex items-center justify-center min-h-[54px] transition-colors';
+          if (badgeEl) {
+            badgeEl.classList.add('hidden');
+            badgeEl.classList.remove('flex');
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // SOUND EFFECTS (Web Audio API)
+    // =========================================================================
+    let audioCtx = null;
+
+    function playSound(type) {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+
+        if (type === 'beep') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1850, now);
+          osc.frequency.exponentialRampToValueAtTime(2200, now + 0.11);
+          gain.gain.setValueAtTime(0.16, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === 'error') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(210, now);
+          gain.gain.setValueAtTime(0.14, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === 'click') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(680, now);
+          gain.gain.setValueAtTime(0.11, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.07);
+        } else if (type === 'print') {
+          for (let i = 0; i < 8; i++) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(240 + (i % 2) * 45, now + i * 0.11);
+            gain.gain.setValueAtTime(0.032, now + i * 0.11);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.11 + 0.09);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.11);
+            osc.stop(now + i * 0.11 + 0.095);
+          }
+        } else if (type === 'chime') {
+          [587.33, 880].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+            gain.gain.setValueAtTime(0.13, now + idx * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.1);
+            osc.stop(now + idx * 0.1 + 0.32);
+          });
+        }
+      } catch (e) {
+        // Ignore browser audio autoplay restrictions
+      }
+    }
+
+    function showToast(title, message, variant = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const colors = {
+        info: 'bg-slate-900 border-blue-500 text-white',
+        success: 'bg-emerald-950 border-emerald-500 text-white',
+        error: 'bg-red-950 border-red-500 text-white',
+        warning: 'bg-amber-950 border-amber-500 text-white'
+      };
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto p-3.5 rounded-xl border-l-4 shadow-2xl backdrop-blur-md animate-fadeInScale ${colors[variant] || colors.info}`;
+      toast.innerHTML = `
+        <div class="font-extrabold text-xs sm:text-sm">${title}</div>
+        <div class="text-xs text-slate-200 mt-0.5 leading-snug">${message}</div>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3800);
+    }
+
+    // =========================================================================
+    // STATE PERSISTENCE & URL PARAMETER (?nama=...)
+    // =========================================================================
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.candidates) && parsed.candidates.length === 4) {
+            appState.candidates = DEFAULT_CANDIDATES.map((defCand, idx) => ({
+              ...defCand,
+              votes: Number(parsed.candidates[idx]?.votes) || 0
+            }));
+          }
+          if (Array.isArray(parsed.voters) && parsed.voters.length > 0) {
+            appState.voters = parsed.voters;
+          }
+          if (Array.isArray(parsed.auditLogs)) {
+            appState.auditLogs = parsed.auditLogs;
+          }
+        }
+      } catch (err) {
+        // Fallback ke state default
+      }
+
+      // Cek parameter URL ?nama=...
+      const urlParams = new URLSearchParams(window.location.search);
+      const namaParam = urlParams.get('nama');
+      if (namaParam && namaParam.trim().length > 0) {
+        const upperName = namaParam.trim().toUpperCase();
+        const exists = appState.voters.find(v => v.name.toUpperCase() === upperName);
+        if (!exists) {
+          const nextNum = String(appState.voters.length + 1).padStart(3, '0');
+          appState.voters.unshift({
+            dptNo: nextNum,
+            name: upperName,
+            nik: `3213040101900${nextNum}`,
+            qrCode: `PILKADES-GEMBOR-TPS01-DPT${nextNum}-3213040101900${nextNum}`,
+            hasVoted: false,
+            votedAt: null
+          });
+          saveState();
+        }
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (err) {
+        // Ignore storage error
+      }
+      updateGlobalStats();
+    }
+
+    function updateGlobalStats() {
+      const votedCount = appState.voters.filter(v => v.hasVoted).length;
+      const dptStatsEl = document.getElementById('footer-dpt-stats');
+      const auditCountEl = document.getElementById('audit-box-count');
+      if (dptStatsEl) {
+        dptStatsEl.textContent = `${votedCount} / ${appState.voters.length} Pemilih`;
+      }
+      if (auditCountEl) {
+        auditCountEl.textContent = appState.auditLogs.length;
+      }
+    }
+
+    function startLiveClocks() {
+      const updateClock = () => {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('id-ID', { hour12: false }) + ' WIB';
+        const c1 = document.getElementById('scanner-clock');
+        const c2 = document.getElementById('ballot-clock');
+        if (c1) c1.textContent = timeStr;
+        if (c2) c2.textContent = timeStr;
+      };
+      updateClock();
+      setInterval(updateClock, 1000);
+    }
+
+    function showScreen(screenName) {
+      ['screen-scanner', 'screen-ballot', 'screen-receipt', 'screen-thankyou'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.classList.add('hidden');
+          el.classList.remove('flex');
+        }
+      });
+      const target = document.getElementById(`screen-${screenName}`);
+      if (target) {
+        target.classList.remove('hidden');
+        target.classList.add('flex');
+      }
+      if (screenName !== 'scanner') {
+        stopCameraScanner();
+      }
+    }
+
+    // =========================================================================
+    // LAYAR 1: PEMINDAI QR CODE (WEBCAM & SIMULASI DPT)
+    // =========================================================================
+    async function toggleCameraScanner() {
+      const btn = document.getElementById('btn-toggle-camera');
+      const video = document.getElementById('qr-video');
+      const bgPlaceholder = document.getElementById('camera-placeholder-bg');
+
+      if (cameraStream) {
+        stopCameraScanner();
+        return;
+      }
+
+      // Cek apakah browser memblokir kamera karena koneksi bukan HTTPS / localhost
+      if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast(
+          'Akses Kamera Diblokir Browser (Wajib HTTPS)',
+          'Di tablet, kamera tidak bisa dibuka lewat http://192.168.x.x. Gunakan HTTPS (mis. ngrok / hosting HTTPS) atau klik "Simulasi Scan QR Undangan".',
+          'error'
+        );
+        return;
+      }
+
+      try {
+        // Optimasi resolusi dan fokus kamera belakang untuk pembacaan QR yang lebih tajam
+        try {
+          cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: false
+          });
+        } catch (firstErr) {
+          cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+        }
+
+        video.setAttribute('autoplay', '');
+        video.setAttribute('muted', '');
+        video.setAttribute('playsinline', '');
+        video.srcObject = cameraStream;
+        await video.play();
+
+        video.classList.remove('hidden');
+        bgPlaceholder.classList.add('hidden');
+        btn.textContent = 'Tutup pemindai';
+        document.getElementById('scanner-status-text').innerHTML =
+          `<span class="inline-block w-2 h-2 rounded-full bg-lime-400 animate-ping"></span><span>Kamera Aktif • Arahkan QR ke dalam kotak...</span>`;
+        requestAnimationFrame(scanVideoFrame);
+      } catch (err) {
+        const reason = err && err.name === 'NotAllowedError'
+          ? 'Izin kamera ditolak. Ketuk ikon gembok/pengaturan di bilah alamat browser tablet lalu izinkan Kamera.'
+          : 'Kamera sedang dipakai aplikasi lain atau tidak didukung browser ini.';
+        showToast('Gagal Membuka Kamera Tablet', reason, 'warning');
+      }
+    }
+
+    function stopCameraScanner() {
+      const btn = document.getElementById('btn-toggle-camera');
+      const video = document.getElementById('qr-video');
+      const bgPlaceholder = document.getElementById('camera-placeholder-bg');
+
+      if (cameraAnimFrame) {
+        cancelAnimationFrame(cameraAnimFrame);
+        cameraAnimFrame = null;
+      }
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      if (video) {
+        video.srcObject = null;
+        video.classList.add('hidden');
+      }
+      if (bgPlaceholder) bgPlaceholder.classList.remove('hidden');
+      if (btn) btn.textContent = 'Aktifkan Kamera';
+    }
+
+    function scanVideoFrame() {
+      const video = document.getElementById('qr-video');
+      const canvas = document.getElementById('qr-canvas');
+      if (!cameraStream || !video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+        if (cameraStream) cameraAnimFrame = requestAnimationFrame(scanVideoFrame);
+        return;
+      }
+
+      // Optimasi ukuran canvas ke skala yang lebih cepat dan akurat untuk deteksi jsQR
+      const targetWidth = video.videoWidth || 640;
+      const targetHeight = video.videoHeight || 480;
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+      }
+
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      if (typeof jsQR === 'function' && !isScanningCooldown) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'attemptBoth'
+        });
+        if (code && code.data) {
+          isScanningCooldown = true;
+          processScannedQrPayload(code.data);
+          setTimeout(() => { isScanningCooldown = false; }, 2500);
+        }
+      }
+
+      if (cameraStream) {
+        cameraAnimFrame = requestAnimationFrame(scanVideoFrame);
+      }
+    }
+
+    function processScannedQrPayload(qrPayload) {
+      const trimmed = String(qrPayload || '').trim();
+      const voter = appState.voters.find(
+        v => v.qrCode === trimmed || v.dptNo === trimmed || v.nik === trimmed
+      );
+
+      if (!voter) {
+        playSound('error');
+        showToast('QR Code Tidak Dikenali', 'Kode QR tidak terdaftar dalam DPT Desa Gembor TPS 01.', 'error');
+        return;
+      }
+
+      if (voter.hasVoted) {
+        playSound('error');
+        document.getElementById('scanner-status-text').innerHTML =
+          `<span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500"></span><span class="text-red-400">DITOLAK: QR Code No. DPT ${voter.dptNo} sudah digunakan!</span>`;
+        showToast(
+          'Akses Ditolak — Sudah Memilih',
+          `Surat Undangan No. DPT ${voter.dptNo} (${voter.name}) telah digunakan pada ${voter.votedAt}.`,
+          'error'
+        );
+        return;
+      }
+
+      playSound('beep');
+      const simCard = document.getElementById('simulated-scan-card');
+      const pillBadge = document.getElementById('scanner-pill-badge');
+      const qrContainer = document.getElementById('sim-card-qr');
+
+      document.getElementById('sim-card-dpt').textContent = `No. Urut DPT: ${voter.dptNo}`;
+      document.getElementById('sim-card-name').textContent = voter.name;
+      qrContainer.innerHTML = generateDeterministicQrSVG(voter.qrCode);
+
+      pillBadge.classList.add('hidden');
+      simCard.classList.remove('hidden');
+      document.getElementById('scanner-status-text').innerHTML =
+        `<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400"></span><span class="text-emerald-300">QR Terverifikasi! Membuka Surat Suara untuk ${voter.name}...</span>`;
+
+      setTimeout(() => {
+        simCard.classList.add('hidden');
+        pillBadge.classList.remove('hidden');
+        document.getElementById('scanner-status-text').innerHTML =
+          `<span class="inline-block w-2 h-2 rounded-full bg-amber-400 animate-ping"></span><span>Mencari kode QR undangan...</span>`;
+        openBallotForVoter(voter);
+      }, 900);
+    }
+
+    // =========================================================================
+    // MODAL SIMULASI SCAN QR UNDANGAN (DPT DESA GEMBOR)
+    // =========================================================================
+    function openSimModal() {
+      playSound('click');
+      const list = document.getElementById('sim-voters-list');
+      list.innerHTML = '';
+
+      appState.voters.forEach((voter) => {
+        const card = document.createElement('div');
+        card.className = `rounded-xl border-2 p-4 bg-white shadow-sm flex flex-col justify-between transition ${
+          voter.hasVoted ? 'border-slate-200 opacity-75' : 'border-slate-300 hover:border-blue-600'
+        }`;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between gap-2 border-b border-slate-200 pb-2.5">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-8 shrink-0">${renderEmblemHTML()}</div>
+                <div>
+                  <div class="text-[10px] font-extrabold uppercase tracking-tight text-slate-800 leading-none">
+                    SURAT UNDANGAN PEMUNGUTAN SUARA
+                  </div>
+                  <div class="text-[9px] text-slate-500 mt-0.5">DESA GEMBOR • ${ELECTION_META.tps}</div>
+                </div>
+              </div>
+              <div class="text-right shrink-0">
+                <div class="text-[9px] text-slate-500 font-semibold">No Urut DPT</div>
+                <div class="text-sm font-black text-slate-900">${voter.dptNo}</div>
+              </div>
+            </div>
+
+            <div class="my-3 flex items-center gap-3">
+              <div class="p-1.5 bg-white border border-slate-300 rounded-lg shrink-0 w-16 h-16">
+                ${generateDeterministicQrSVG(voter.qrCode)}
+              </div>
+              <div class="min-w-0 flex-1 space-y-1">
+                <div class="inline-block px-2 py-0.5 text-[9px] font-bold text-red-700 border border-red-400 bg-red-50 rounded">
+                  SURAT UNDANGAN INI BERSIFAT RAHASIA
+                </div>
+                <div class="text-xs text-slate-600">Nama Pemilih:</div>
+                <div class="text-sm font-extrabold text-slate-900 uppercase truncate">${voter.name}</div>
+                <div class="text-[11px] font-mono text-slate-600">NIK: ${voter.nik}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onclick="openInvitationPreview('${voter.dptNo}')"
+              class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer"
+            >
+              Lihat Surat
+            </button>
+            ${
+              voter.hasVoted
+                ? `<button
+                    type="button"
+                    onclick="closeSimModal(); processScannedQrPayload('${voter.qrCode}')"
+                    class="px-3.5 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-bold cursor-pointer"
+                  >
+                    Sudah Memilih (Uji Tolak)
+                  </button>`
+                : `<button
+                    type="button"
+                    onclick="closeSimModal(); processScannedQrPayload('${voter.qrCode}')"
+                    class="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold shadow-xs transition cursor-pointer"
+                  >
+                    Scan QR Ini &rarr;
+                  </button>`
+            }
+          </div>
+        `;
+        list.appendChild(card);
+      });
+
+      document.getElementById('modal-sim-qr').classList.remove('hidden');
+    }
+
+    function closeSimModal() {
+      document.getElementById('modal-sim-qr').classList.add('hidden');
+    }
+
+    // =========================================================================
+    // PREVIEW & CETAK SURAT UNDANGAN PEMUNGUTAN SUARA
+    // =========================================================================
+    function openInvitationPreview(dptNo) {
+      const voter = appState.voters.find(v => v.dptNo === dptNo);
+      if (!voter) return;
+
+      const container = document.getElementById('invitation-letter-content');
+      container.innerHTML = `
+        <div id="printable-invitation-sheet" class="border-2 border-slate-800 p-5 sm:p-7 bg-white text-slate-900 max-w-xl mx-auto">
+          <div class="flex items-center justify-between border-b-2 border-slate-800 pb-3">
+            <div class="w-12 h-14 shrink-0">${renderEmblemHTML()}</div>
+            <div class="text-center px-2">
+              <div class="text-sm sm:text-base font-black uppercase leading-tight">
+                SURAT UNDANGAN<br/>PEMUNGUTAN SUARA<br/>KEPADA PEMILIH
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-[11px] font-semibold text-slate-600">No Urut DPT</div>
+              <div class="text-lg font-black text-slate-900">${voter.dptNo}</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center my-5">
+            <div class="sm:col-span-5 flex justify-center">
+              <div class="p-2 border border-slate-300 bg-white w-28 h-28">
+                ${generateDeterministicQrSVG(voter.qrCode)}
+              </div>
+            </div>
+            <div class="sm:col-span-7 space-y-2.5">
+              <div class="border-2 border-red-600 text-red-700 font-extrabold text-xs text-center py-2 px-3 uppercase tracking-wide">
+                SURAT UNDANGAN INI BERSIFAT RAHASIA
+              </div>
+              <div class="border border-slate-800 text-slate-900 font-bold text-xs text-center py-2 px-3">
+                Tunjukkan QRCode berikut saat akan memilih
+              </div>
+            </div>
+          </div>
+
+          <div class="text-xs sm:text-sm leading-relaxed space-y-3">
+            <p>
+              Bersama ini diberitahukan bahwa Panitia Pemilihan mengundang Saudara/i
+              <strong class="uppercase underline">${voter.name}</strong><br/>
+              NIK <strong class="font-mono">${voter.nik}</strong> untuk memberikan suara pada pemilihan:
+              <strong class="uppercase">PEMILIHAN KEPALA DESA GEMBOR PERIODE TAHUN 2026 - 2034</strong> yang akan dilaksanakan pada:
+            </p>
+
+            <table class="w-full text-xs sm:text-sm my-2">
+              <tr>
+                <td class="py-1 w-36 font-medium">Hari/Tanggal</td>
+                <td class="py-1 font-bold">: ${ELECTION_META.dateText}</td>
+              </tr>
+              <tr>
+                <td class="py-1 font-medium">Pukul</td>
+                <td class="py-1 font-bold">: ${ELECTION_META.timeText}</td>
+              </tr>
+              <tr>
+                <td class="py-1 font-medium">Nomor TPS</td>
+                <td class="py-1 font-bold">: ${ELECTION_META.tps} (${ELECTION_META.booth})</td>
+              </tr>
+              <tr>
+                <td class="py-1 font-medium">Alamat</td>
+                <td class="py-1 font-bold">: ${ELECTION_META.address}</td>
+              </tr>
+            </table>
+
+            <p class="text-[11px] text-slate-600 pt-3 border-t border-slate-300 leading-normal">
+              Surat Undangan ini beserta KTP-Elektronik harus dibawa pada saat pencoblosan. QRCode bersifat rahasia dan tidak boleh disebarluaskan atau diduplikasi.
+            </p>
+          </div>
+        </div>
+      `;
+
+      const scanBtn = document.getElementById('btn-scan-from-preview');
+      if (voter.hasVoted) {
+        scanBtn.textContent = 'Sudah Digunakan Memilih';
+        scanBtn.className = 'px-4 py-2 rounded-xl bg-slate-300 text-slate-600 text-xs sm:text-sm font-bold cursor-not-allowed';
+        scanBtn.onclick = null;
+      } else {
+        scanBtn.textContent = 'Scan QR Ini Sekarang';
+        scanBtn.className = 'px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow transition cursor-pointer';
+        scanBtn.onclick = () => {
+          closeInvitationPreview();
+          closeSimModal();
+          closeAdminModal();
+          processScannedQrPayload(voter.qrCode);
+        };
+      }
+
+      document.getElementById('modal-invitation-preview').classList.remove('hidden');
+    }
+
+    function closeInvitationPreview() {
+      document.getElementById('modal-invitation-preview').classList.add('hidden');
+    }
+
+    function printInvitationLetter() {
+      const sheet = document.getElementById('printable-invitation-sheet');
+      if (!sheet) return;
+      const printArea = document.getElementById('print-area');
+      printArea.innerHTML = sheet.outerHTML;
+      printArea.classList.remove('hidden');
+      window.print();
+      printArea.classList.add('hidden');
+    }
+
+    // =========================================================================
+    // LAYAR 2: SURAT SUARA DIGITAL (4 KANDIDAT DESA GEMBOR)
+    // =========================================================================
+    function openBallotForVoter(voter) {
+      activeVoter = voter;
+      selectedCandidateId = null;
+      document.getElementById('ballot-voter-info').textContent = `${voter.name} • DPT #${voter.dptNo}`;
+      applyBallotBackgroundStyle();
+      syncCandidateCardsDOM();
+      updateBallotSubmitButton();
+      showScreen('ballot');
+    }
+
+    function cancelVotingSession() {
+      playSound('click');
+      activeVoter = null;
+      selectedCandidateId = null;
+      showToast('Sesi Dibatalkan', 'Pemilih keluar sebelum memilih. QR Undangan masih dapat digunakan.', 'info');
+      showScreen('scanner');
+    }
+
+    function selectCandidate(candidateId) {
+      playSound('click');
+      selectedCandidateId = candidateId;
+      syncCandidateCardsDOM();
+      updateBallotSubmitButton();
+    }
+
+    function updateBallotSubmitButton() {
+      const btn = document.getElementById('btn-submit-ballot');
+      const handGuide = document.getElementById('hand-pointer-guide');
+      if (selectedCandidateId) {
+        btn.disabled = false;
+        btn.className =
+          'w-full py-3.5 sm:py-4 rounded-xl font-extrabold text-sm sm:text-base uppercase tracking-wider transition-all duration-200 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white shadow-xl shadow-blue-600/30 cursor-pointer';
+        if (handGuide) {
+          handGuide.classList.remove('hidden');
+          handGuide.classList.add('flex');
+        }
+      } else {
+        btn.disabled = true;
+        btn.className =
+          'w-full py-3.5 sm:py-4 rounded-xl font-extrabold text-sm sm:text-base uppercase tracking-wider transition-all duration-200 bg-slate-300 text-slate-500 cursor-not-allowed';
+        if (handGuide) {
+          handGuide.classList.add('hidden');
+          handGuide.classList.remove('flex');
+        }
+      }
+    }
+
+    // =========================================================================
+    // LAYAR 3: MODAL KONFIRMASI PEMILIHAN
+    // =========================================================================
+    function openConfirmModal() {
+      if (!selectedCandidateId) return;
+      playSound('click');
+      const cand = appState.candidates.find(c => c.id === selectedCandidateId);
+      if (!cand) return;
+
+      const activeSrc = getCandidateActiveImageSrc(cand);
+      const focusPos = cand.photoPosition || 'object-top';
+      document.getElementById('confirm-cand-number').textContent = cand.number;
+      document.getElementById('confirm-cand-photo-box').innerHTML = `
+        <img
+          src="${activeSrc}"
+          alt="Foto ${cand.name}"
+          onerror="this.onerror=null; this.src='https://placehold.co/300x325/e2e8f0/1e293b?text=Foto+Calon+${cand.number}'"
+          class="w-full h-full object-cover ${focusPos}"
+        />
+      `;
+      document.getElementById('confirm-cand-name').textContent = cand.name;
+
+      document.getElementById('modal-confirm').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      playSound('click');
+      document.getElementById('modal-confirm').classList.add('hidden');
+    }
+
+    function generateHexHash(len = 8) {
+      const chars = '0123456789abcdef';
+      let out = '';
+      for (let i = 0; i < len; i++) {
+        out += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return out;
+    }
+
+    function confirmAndCastVote() {
+      if (!activeVoter || !selectedCandidateId) return;
+      const cand = appState.candidates.find(c => c.id === selectedCandidateId);
+      const voter = appState.voters.find(v => v.dptNo === activeVoter.dptNo);
+      if (!cand || !voter || voter.hasVoted) return;
+
+      const hash1 = generateHexHash(8);
+      const hash2 = generateHexHash(8);
+      const fullToken = `${hash1}-${hash2}`;
+      const nowStr = new Date().toLocaleString('id-ID', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }) + ' WIB';
+
+      const cipherText = `*&+=#%$==@GMB26#*&$%*#+=@%&=-$&Hash:${hash1}${hash2}*#==@%&=-$&#*`;
+
+      cand.votes += 1;
+      voter.hasVoted = true;
+      voter.votedAt = nowStr;
+
+      const auditEntry = {
+        token: fullToken,
+        hash1,
+        hash2,
+        tps: ELECTION_META.tps,
+        booth: ELECTION_META.booth,
+        timestamp: nowStr,
+        encryptedLine: cipherText
+      };
+      appState.auditLogs.unshift(auditEntry);
+      saveState();
+
+      document.getElementById('modal-confirm').classList.add('hidden');
+      renderThermalReceipt(auditEntry);
+      playSound('print');
+      showScreen('receipt');
+    }
+
+    // =========================================================================
+    // LAYAR 4: PRINTER STRUK AUDIT THERMAL & KOTAK AUDIT
+    // =========================================================================
+    function renderThermalReceipt(entry) {
+      document.getElementById('receipt-hash-line1').textContent = entry.hash1;
+      document.getElementById('receipt-hash-line2').textContent = entry.hash2;
+      document.getElementById('receipt-cipher-text').textContent = entry.encryptedLine;
+      document.getElementById('receipt-timestamp').textContent = entry.timestamp;
+
+      const qrBox = document.getElementById('receipt-qrcode');
+      qrBox.innerHTML = generateDeterministicQrSVG(
+        `AUDIT|PILKADES-GEMBOR-2026-2034|TPS01|BILIK1|${entry.token}`,
+        entry.hash1
+      );
+
+      const paper = document.getElementById('thermal-receipt-paper');
+      paper.classList.remove('animate-dropToAudit');
+      void paper.offsetWidth;
+      paper.classList.add('animate-printSlide');
+    }
+
+    function printPhysicalThermalReceipt() {
+      const receiptEl = document.getElementById('thermal-receipt-paper');
+      if (!receiptEl) return;
+      const printArea = document.getElementById('print-area');
+      printArea.innerHTML = `
+        <div style="width: 260px; margin: 0 auto; text-align: center; font-family: monospace; color: #000;">
+          ${receiptEl.innerHTML}
+        </div>
+      `;
+      printArea.classList.remove('hidden');
+      window.print();
+      printArea.classList.add('hidden');
+    }
+
+    function insertReceiptIntoAuditBox() {
+      const btn = document.getElementById('btn-finish-audit');
+      btn.disabled = true;
+      playSound('chime');
+
+      const paper = document.getElementById('thermal-receipt-paper');
+      paper.classList.remove('animate-printSlide');
+      paper.classList.add('animate-dropToAudit');
+
+      setTimeout(() => {
+        btn.disabled = false;
+        activeVoter = null;
+        selectedCandidateId = null;
+        showScreen('thankyou');
+      }, 850);
+    }
+
+    function finishToNextVoter() {
+      playSound('click');
+      showScreen('scanner');
+    }
+
+    // =========================================================================
+    // PANEL PANITIA (3 TAB: REAL COUNT, DPT, VERIFIKATOR AUDIT)
+    // =========================================================================
+    function openAdminModal(initialTab = 'realcount') {
+      playSound('click');
+      renderAdminRealCount();
+      renderAdminDptTable();
+      renderAdminAuditLogs();
+      switchAdminTab(initialTab);
+      document.getElementById('modal-admin').classList.remove('hidden');
+    }
+
+    function closeAdminModal() {
+      document.getElementById('modal-admin').classList.add('hidden');
+    }
+
+    function switchAdminTab(tabKey) {
+      ['realcount', 'dpt', 'audit'].forEach(key => {
+        const panel = document.getElementById(`admin-tab-${key}`);
+        const btn = document.getElementById(`tab-btn-${key}`);
+        if (!panel || !btn) return;
+        if (key === tabKey) {
+          panel.classList.remove('hidden');
+          btn.className = 'admin-tab-btn px-4 py-3 text-xs sm:text-sm font-bold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap cursor-pointer';
+        } else {
+          panel.classList.add('hidden');
+          btn.className = 'admin-tab-btn px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap cursor-pointer';
+        }
+      });
+    }
+
+    function renderAdminRealCount() {
+      const totalDpt = appState.voters.length;
+      const votedDpt = appState.voters.filter(v => v.hasVoted).length;
+      const unvotedDpt = totalDpt - votedDpt;
+      const participation = totalDpt > 0 ? ((votedDpt / totalDpt) * 100).toFixed(1) : '0.0';
+
+      document.getElementById('stat-total-dpt').textContent = totalDpt;
+      document.getElementById('stat-voted-dpt').textContent = votedDpt;
+      document.getElementById('stat-unvoted-dpt').textContent = unvotedDpt;
+      document.getElementById('stat-participation').textContent = `${participation}%`;
+
+      const totalVotes = appState.candidates.reduce((sum, c) => sum + c.votes, 0);
+      const barsContainer = document.getElementById('realcount-bars');
+      barsContainer.innerHTML = '';
+
+      appState.candidates.forEach(cand => {
+        const pct = totalVotes > 0 ? ((cand.votes / totalVotes) * 100).toFixed(1) : '0.0';
+        const row = document.createElement('div');
+        row.className = 'space-y-1.5';
+        row.innerHTML = `
+          <div class="flex items-center justify-between gap-2 text-xs sm:text-sm">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <img
+                src="${getCandidateActiveImageSrc(cand)}"
+                onerror="this.onerror=null; this.src='https://placehold.co/60x60/e2e8f0/1e293b?text=${cand.number}'"
+                class="w-8 h-8 rounded-lg object-cover object-top border border-slate-300 shrink-0"
+                alt="Calon ${cand.number}"
+              />
+              <span class="w-6 h-6 rounded-md bg-slate-900 text-white font-black text-xs flex items-center justify-center shrink-0">
+                ${cand.number}
+              </span>
+              <span class="font-bold text-slate-900 truncate">${cand.name}</span>
+            </div>
+            <div class="shrink-0 font-mono font-bold text-slate-800">
+              ${cand.votes} Suara <span class="text-blue-600">(${pct}%)</span>
+            </div>
+          </div>
+          <div class="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+            <div class="h-full bg-blue-600 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+          </div>
+        `;
+        barsContainer.appendChild(row);
+      });
+    }
+
+    function renderAdminDptTable() {
+      const tbody = document.getElementById('admin-dpt-tbody');
+      tbody.innerHTML = '';
+
+      appState.voters.forEach(voter => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-extrabold text-slate-900">${voter.dptNo}</td>
+          <td class="py-3 px-4 font-bold uppercase text-slate-800">${voter.name}</td>
+          <td class="py-3 px-4 font-mono text-slate-600">${voter.nik}</td>
+          <td class="py-3 px-4">
+            ${
+              voter.hasVoted
+                ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">Sudah Memilih</span>`
+                : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">Belum Memilih</span>`
+            }
+          </td>
+          <td class="py-3 px-4 text-right">
+            <button
+              type="button"
+              onclick="openInvitationPreview('${voter.dptNo}')"
+              class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition cursor-pointer"
+            >
+              Lihat / Cetak Undangan
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function handleAddDptVoter(e) {
+      e.preventDefault();
+      const dptNo = document.getElementById('new-dpt-no').value.trim();
+      const name = document.getElementById('new-dpt-name').value.trim().toUpperCase();
+      const nik = document.getElementById('new-dpt-nik').value.trim();
+
+      if (!dptNo || !name || !nik) return;
+      if (appState.voters.some(v => v.dptNo === dptNo)) {
+        showToast('Nomor DPT Duplikat', `No. Urut DPT ${dptNo} sudah terdaftar.`, 'error');
+        return;
+      }
+
+      appState.voters.push({
+        dptNo,
+        name,
+        nik,
+        qrCode: `PILKADES-GEMBOR-TPS01-DPT${dptNo}-${nik}`,
+        hasVoted: false,
+        votedAt: null
+      });
+      saveState();
+      renderAdminDptTable();
+      renderAdminRealCount();
+      e.target.reset();
+      showToast('DPT Ditambahkan', `Pemilih ${name} (DPT #${dptNo}) berhasil ditambahkan.`, 'success');
+    }
+
+    function renderAdminAuditLogs() {
+      const container = document.getElementById('audit-logs-list');
+      if (appState.auditLogs.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-500 italic p-4 bg-slate-50 rounded-xl border border-slate-200">Belum ada struk audit yang masuk ke Kotak Audit TPS 01.</div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      appState.auditLogs.forEach(log => {
+        const item = document.createElement('div');
+        item.className = 'p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2 text-xs';
+        item.innerHTML = `
+          <div>
+            <div class="font-mono font-bold text-slate-900">Token Struk: <span class="text-blue-700">${log.token}</span></div>
+            <div class="text-slate-500 mt-0.5">${log.tps} / ${log.booth} • Tercatat: ${log.timestamp} (Identitas Pemilih Dirahasiakan)</div>
+          </div>
+          <button
+            type="button"
+            onclick="document.getElementById('audit-verify-input').value='${log.token}'; verifyAuditToken();"
+            class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 font-bold text-slate-700 cursor-pointer"
+          >
+            Verifikasi Token
+          </button>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function verifyAuditToken() {
+      const query = document.getElementById('audit-verify-input').value.trim().toLowerCase();
+      const resultBox = document.getElementById('audit-verify-result');
+      resultBox.classList.remove('hidden');
+
+      const found = appState.auditLogs.find(
+        l => l.token.toLowerCase() === query || l.hash1.toLowerCase() === query
+      );
+
+      if (!found) {
+        resultBox.className = 'mt-3 p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-800 font-semibold';
+        resultBox.textContent = 'Token Struk Audit tidak ditemukan dalam database Kotak Audit TPS 01.';
+        return;
+      }
+
+      resultBox.className = 'mt-3 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 space-y-1';
+      resultBox.innerHTML = `
+        <div class="font-extrabold text-emerald-800">STRUK AUDIT TERVERIFIKASI SAH</div>
+        <div>Token Hash: <strong class="font-mono">${found.token}</strong></div>
+        <div>Lokasi &amp; Waktu: <strong>${found.tps} / ${found.booth}</strong> (${found.timestamp})</div>
+        <div class="text-emerald-700 italic">Status: Suara sah masuk ke Kotak Audit. Kerahasiaan pilihan pemilih tetap terlindungi.</div>
+      `;
+    }
+
+    function showInlineResetConfirm() {
+      const wrapper = document.getElementById('reset-action-wrapper');
+      wrapper.innerHTML = `
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="executeResetSimulation()" class="px-3.5 py-2 rounded-xl bg-red-700 hover:bg-red-800 text-white font-bold text-xs cursor-pointer">
+            Ya, Reset Sekarang
+          </button>
+          <button type="button" onclick="cancelInlineReset()" class="px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 font-bold text-xs cursor-pointer">
+            Batal
+          </button>
+        </div>
+      `;
+    }
+
+    function cancelInlineReset() {
+      const wrapper = document.getElementById('reset-action-wrapper');
+      wrapper.innerHTML = `
+        <button type="button" onclick="showInlineResetConfirm()" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm transition cursor-pointer">
+          Reset Simulasi
+        </button>
+      `;
+    }
+
+    function executeResetSimulation() {
+      appState.candidates = JSON.parse(JSON.stringify(DEFAULT_CANDIDATES));
+      appState.voters = JSON.parse(JSON.stringify(DEFAULT_VOTERS));
+      appState.auditLogs = [];
+      saveState();
+      cancelInlineReset();
+      renderAdminRealCount();
+      renderAdminDptTable();
+      renderAdminAuditLogs();
+      showToast('Simulasi Direset', 'Semua suara & status DPT kembali seperti awal.', 'success');
+    }
+
+    // =========================================================================
+    // BOOTSTRAP APPLICATION ON WINDOW LOAD
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+
+      applyBallotBackgroundStyle();
+      syncCandidateCardsDOM();
+      syncAllLogosDOM();
+
+      updateGlobalStats();
+      startLiveClocks();
+      showScreen('scanner');
+    });
+  </script>
+</body>
+</html>
